@@ -1,0 +1,36 @@
+# filtro_excel.py
+import pandas as pd
+
+# 1) Carrega a tabela do Excel como DataFrame
+# Observação: xl() é função nativa do Excel M365 com Python nativo
+# Não requer bibliotecas externas para leitura de tabelas da planilha
+
+df = xl("DimPorcComTipoVenda[#Tudo]", headers=True)
+
+# 2) Converte os tipos das colunas
+df = df.convert_dtypes()
+df['Valor'] = pd.to_numeric(df['Valor'], errors='coerce')
+df['DataContrato'] = pd.to_datetime(df['DataContrato'], dayfirst=True)
+
+# 3) Define filtros (poderiam vir de células do Excel, exemplo: xl("C1"))
+filtros = {
+    'BU':        ['CP'],
+    'TipoVenda': ['Novo Cliente', 'Renovação'],
+    'Origem':    ['Outbound', 'Indicação'],
+}
+data_inicio  = '2025-01-01'
+data_termino = '2025-03-01'
+
+# 4) Cria máscara de filtro de forma genérica
+mask = pd.Series(True, index=df.index)
+for coluna, lista in filtros.items():
+    if lista:
+        mask &= df[coluna].isin(lista)
+mask &= df['DataContrato'].between(data_inicio, data_termino)
+
+# 5) Aplica o filtro
+df_filtrado = df.loc[mask]
+
+# 6) Resultado vai para a planilha
+# No Excel, deixar como última instrução para "derrubar" o resultado
+df_filtrado
